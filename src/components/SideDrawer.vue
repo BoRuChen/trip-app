@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PlaceList from './PlaceList.vue'
-import CategoryManager from './CategoryManager.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useCategoriesStore } from '@/stores/categories'
 
@@ -11,7 +10,7 @@ const emit = defineEmits<{ close: []; select: [id: string] }>()
 const places = usePlacesStore()
 const categories = useCategoriesStore()
 
-type Tab = 'places' | 'categories' | 'settings'
+type Tab = 'places' | 'settings'
 const tab = ref<Tab>('places')
 
 function handleSelect(id: string) {
@@ -90,13 +89,11 @@ function clearAll() {
 
         <nav class="tabs">
           <button :class="{ active: tab === 'places' }" @click="tab = 'places'">景點</button>
-          <button :class="{ active: tab === 'categories' }" @click="tab = 'categories'">分類</button>
           <button :class="{ active: tab === 'settings' }" @click="tab = 'settings'">設定</button>
         </nav>
 
         <div class="content">
           <PlaceList v-if="tab === 'places'" @select="handleSelect" />
-          <CategoryManager v-else-if="tab === 'categories'" />
           <div v-else class="settings">
             <button @click="exportJson">匯出 JSON 備份</button>
             <button @click="fileInput?.click()">匯入 JSON</button>
