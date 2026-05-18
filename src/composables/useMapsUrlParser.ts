@@ -16,20 +16,39 @@ function tryBareCoords(input: string): ParseResult | null {
   return { ok: true, lat, lng }
 }
 
-function tryPlaceUrl(input: string): ParseResult | null {
-  // https://www.google.com/maps/place/<name>/@lat,lng,zoom
-  const m = input.match(/\/maps\/place\/([^/]+)\/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
+function tryDataPin(input: string): { lat: number; lng: number } | null {
+  // /data=...!3d<lat>!4d<lng>... — actual place pin (higher precision than @viewport)
+  const m = input.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/)
   if (!m) return null
+  const lat = parseFloat(m[1]!)
+  const lng = parseFloat(m[2]!)
+  if (!isValidLat(lat) || !isValidLng(lng)) return null
+  return { lat, lng }
+}
+
+function tryPlaceUrl(input: string): ParseResult | null {
+  // https://www.google.com/maps/place/<name>/@<viewport>/data=...!3d!4d<pin>
+  const nameMatch = input.match(/\/maps\/place\/([^/]+)/)
+  if (!nameMatch) return null
   let name: string
   try {
-    name = decodeURIComponent(m[1]!.replace(/\+/g, ' '))
+    name = decodeURIComponent(nameMatch[1]!.replace(/\+/g, ' '))
   } catch {
-    name = m[1]!.replace(/\+/g, ' ')
+    name = nameMatch[1]!.replace(/\+/g, ' ')
   }
-  const lat = parseFloat(m[2]!)
-  const lng = parseFloat(m[3]!)
-  if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
-  return { ok: true, lat, lng, name }
+
+  const pin = tryDataPin(input)
+  if (pin) return { ok: true, ...pin, name }
+
+  const atMatch = input.match(/\/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
+  if (atMatch) {
+    const lat = parseFloat(atMatch[1]!)
+    const lng = parseFloat(atMatch[2]!)
+    if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
+    return { ok: true, lat, lng, name }
+  }
+
+  return null
 }
 
 function tryAtUrl(input: string): ParseResult | null {

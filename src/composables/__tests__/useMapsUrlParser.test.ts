@@ -54,4 +54,18 @@ describe('parseMapsInput', () => {
     const r = parseMapsInput('https://www.google.com/maps/@35.1531,129.1187,17z')
     expect(r).toEqual({ ok: true, lat: 35.1531, lng: 129.1187, name: undefined })
   })
+
+  it('prefers !3d!4d pin coords over @viewport coords on a real place URL', () => {
+    const url =
+      'https://www.google.com/maps/place/Haeundae+Beach/@35.1585,129.1604,17z/data=!3m1!4b1!4m6!3m5!1s0x35689e5fd3d05ed3:0x6a8f3ec3e87497a4!8m2!3d35.158698!4d129.160056!16s%2Fg%2F11b6q6_d8h'
+    const r = parseMapsInput(url)
+    expect(r).toEqual({ ok: true, lat: 35.158698, lng: 129.160056, name: 'Haeundae Beach' })
+  })
+
+  it('falls back to @viewport coords when /place/ URL has no data segment', () => {
+    const r = parseMapsInput(
+      'https://www.google.com/maps/place/Gwangalli+Beach/@35.1531,129.1187,17z',
+    )
+    expect(r).toEqual({ ok: true, lat: 35.1531, lng: 129.1187, name: 'Gwangalli Beach' })
+  })
 })
