@@ -8,8 +8,8 @@ const isValidLng = (n: number) => Number.isFinite(n) && n >= -180 && n <= 180
 function tryBareCoords(input: string): ParseResult | null {
   const m = input.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/)
   if (!m) return null
-  const lat = parseFloat(m[1])
-  const lng = parseFloat(m[2])
+  const lat = parseFloat(m[1]!)
+  const lng = parseFloat(m[2]!)
   if (!isValidLat(lat) || !isValidLng(lng)) {
     return { ok: false, reason: '座標超出有效範圍' }
   }
@@ -22,12 +22,12 @@ function tryPlaceUrl(input: string): ParseResult | null {
   if (!m) return null
   let name: string
   try {
-    name = decodeURIComponent(m[1].replace(/\+/g, ' '))
+    name = decodeURIComponent(m[1]!.replace(/\+/g, ' '))
   } catch {
-    name = m[1].replace(/\+/g, ' ')
+    name = m[1]!.replace(/\+/g, ' ')
   }
-  const lat = parseFloat(m[2])
-  const lng = parseFloat(m[3])
+  const lat = parseFloat(m[2]!)
+  const lng = parseFloat(m[3]!)
   if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
   return { ok: true, lat, lng, name }
 }
@@ -36,8 +36,8 @@ function tryAtUrl(input: string): ParseResult | null {
   // https://www.google.com/maps/@lat,lng,zoom (no /place/ segment)
   const m = input.match(/\/maps\/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
   if (!m) return null
-  const lat = parseFloat(m[1])
-  const lng = parseFloat(m[2])
+  const lat = parseFloat(m[1]!)
+  const lng = parseFloat(m[2]!)
   if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
   return { ok: true, lat, lng }
 }
@@ -46,8 +46,8 @@ function tryQueryUrl(input: string): ParseResult | null {
   // https://www.google.com/maps/?q=lat,lng or ...&query=lat,lng
   const m = input.match(/[?&](?:q|query)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
   if (!m) return null
-  const lat = parseFloat(m[1])
-  const lng = parseFloat(m[2])
+  const lat = parseFloat(m[1]!)
+  const lng = parseFloat(m[2]!)
   if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
   return { ok: true, lat, lng }
 }
