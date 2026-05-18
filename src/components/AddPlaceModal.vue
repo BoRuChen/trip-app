@@ -48,16 +48,26 @@ watch(
   },
 )
 
-function handleUrlInput() {
+const isResolving = ref(false)
+
+async function handleUrlInput() {
   if (!urlInput.value.trim()) return
-  const r = parseMapsInput(urlInput.value)
-  if (r.ok) {
-    lat.value = r.lat
-    lng.value = r.lng
-    if (r.name && !name.value) name.value = r.name
-    parseError.value = ''
-  } else {
-    parseError.value = r.reason
+  const currentInput = urlInput.value
+  isResolving.value = true
+  parseError.value = ''
+  try {
+    const r = await parseMapsInput(currentInput)
+    // Ignore stale results if user edited the input while we awaited
+    if (urlInput.value !== currentInput) return
+    if (r.ok) {
+      lat.value = r.lat
+      lng.value = r.lng
+      if (r.name && !name.value) name.value = r.name
+    } else {
+      parseError.value = r.reason
+    }
+  } finally {
+    if (urlInput.value === currentInput) isResolving.value = false
   }
 }
 
@@ -103,6 +113,7 @@ function save() {
         @paste="handlePaste"
         placeholder="https://www.google.com/maps/place/..."
       />
+      <p v-if="isResolving" class="hint">解析短網址中…</p>
       <p v-if="parseError" class="err">{{ parseError }}</p>
 
       <label>名稱</label>
@@ -164,6 +175,7 @@ input, textarea, select {
 .check { display: flex; align-items: center; gap: 8px; }
 .check input { width: auto; }
 .err { color: #ef4444; font-size: 0.85rem; margin: 4px 0 0; }
+.hint { color: #6b7280; font-size: 0.85rem; margin: 4px 0 0; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 .actions button { padding: 10px 16px; border: 1px solid #ddd; background: white; border-radius: 8px; cursor: pointer; }
 .actions .primary { background: #3b82f6; color: white; border-color: #3b82f6; }
