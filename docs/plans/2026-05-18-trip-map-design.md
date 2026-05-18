@@ -86,14 +86,14 @@ export interface Place {
 
 ### 持久化
 
-- localStorage key：`busan-trip:v1`
+- localStorage key：`trip:v1`
 - 內容：`{ places, categories, schemaVersion: 1 }`
 - 每次 mutation 後 debounce 300ms 寫入
 - `schemaVersion` 預留未來 migration
 
 ### 匯出 / 匯入
 
-- 匯出：下載 `busan-trip-YYYY-MM-DD.json`
+- 匯出：下載 `trip-YYYY-MM-DD.json`
 - 匯入：選檔 → 預覽筆數 → 「合併 / 覆蓋」二選一
 
 ## 核心功能

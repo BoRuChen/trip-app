@@ -4,11 +4,11 @@
 
 **Goal:** Build a mobile-first Vue 3 SPA that lets the user record Busan-trip places with category icons on a Leaflet map, parse coordinates from pasted Google Maps URLs, and focus on "nearby" places within 1km of the current GPS location.
 
-**Architecture:** Vue 3 + Pinia + Leaflet, single-page, all state in two Pinia stores (`places`, `categories`) persisted to `localStorage` under key `busan-trip:v1`. The map is full-screen; UI controls float over it. Pure logic (URL parser, persistence serialization, distance math) is TDD'd with Vitest. UI components are wired manually and verified in the dev server.
+**Architecture:** Vue 3 + Pinia + Leaflet, single-page, all state in two Pinia stores (`places`, `categories`) persisted to `localStorage` under key `trip:v1`. The map is full-screen; UI controls float over it. Pure logic (URL parser, persistence serialization, distance math) is TDD'd with Vitest. UI components are wired manually and verified in the dev server.
 
 **Tech Stack:** Vue 3, Vite, TypeScript, Pinia, Leaflet, @lucide/vue, uuid, Vitest (testing).
 
-**Design reference:** `docs/plans/2026-05-18-busan-trip-map-design.md`
+**Design reference:** `docs/plans/2026-05-18-trip-map-design.md`
 
 ---
 
@@ -148,7 +148,7 @@ export interface PersistedState {
 ```ts
 import type { Category } from './types'
 
-export const STORAGE_KEY = 'busan-trip:v1'
+export const STORAGE_KEY = 'trip:v1'
 export const BUSAN_CENTER: [number, number] = [35.1796, 129.0756]
 export const DEFAULT_ZOOM = 12
 export const NEARBY_RADIUS_M = 1000
@@ -1105,7 +1105,7 @@ function exportJson() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `busan-trip-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `trip-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
 }

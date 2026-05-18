@@ -1,6 +1,6 @@
 import type { Category } from './types'
 
-export const STORAGE_KEY = 'busan-trip:v1'
+export const STORAGE_KEY = 'trip:v1'
 export const BUSAN_CENTER: [number, number] = [35.1796, 129.0756]
 export const DEFAULT_ZOOM = 12
 export const NEARBY_RADIUS_M = 1000
