@@ -1,5 +1,3 @@
-import { resolveShortUrl } from './shortUrlResolver'
-
 export type ParseResult =
   | { ok: true; lat: number; lng: number; name?: string }
   | { ok: false; reason: string }
@@ -73,7 +71,13 @@ function tryQueryUrl(input: string): ParseResult | null {
   return { ok: true, lat, lng }
 }
 
-function parseLongInput(input: string): ParseResult {
+export function parseMapsInput(input: string): ParseResult {
+  if (!input || !input.trim()) {
+    return { ok: false, reason: '輸入為空' }
+  }
+  if (/maps\.app\.goo\.gl/.test(input)) {
+    return { ok: false, reason: '不支援 short URL，請在瀏覽器打開後貼展開的網址' }
+  }
   return (
     tryPlaceUrl(input) ??
     tryAtUrl(input) ??
@@ -83,20 +87,4 @@ function parseLongInput(input: string): ParseResult {
       reason: '無法解析，請貼 Google Maps 連結或座標（如 35.15, 129.11）',
     }
   )
-}
-
-export async function parseMapsInput(input: string): Promise<ParseResult> {
-  if (!input || !input.trim()) {
-    return { ok: false, reason: '輸入為空' }
-  }
-  if (/maps\.app\.goo\.gl/.test(input)) {
-    let resolved: string
-    try {
-      resolved = await resolveShortUrl(input.trim())
-    } catch (e) {
-      return { ok: false, reason: e instanceof Error ? e.message : String(e) }
-    }
-    return parseLongInput(resolved)
-  }
-  return parseLongInput(input)
 }
