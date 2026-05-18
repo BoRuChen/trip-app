@@ -2,5 +2,9 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import App from './App.vue'
+import { initStores } from './stores'
 
-createApp(App).use(createPinia()).mount('#app')
+const app = createApp(App)
+app.use(createPinia())
+initStores()
+app.mount('#app')
