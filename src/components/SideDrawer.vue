@@ -84,7 +84,7 @@ function clearAll() {
     <div v-if="open" class="backdrop" @click.self="emit('close')">
       <aside class="drawer">
         <header>
-          <h2>Busan Trip</h2>
+          <h2>Trip</h2>
           <button @click="emit('close')" aria-label="關閉">✕</button>
         </header>
 
