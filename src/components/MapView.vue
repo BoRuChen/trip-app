@@ -118,6 +118,15 @@ onUnmounted(() => {
   userMarker = null
   radiusCircle = null
 })
+
+function focusPlace(id: string) {
+  const p = places.places.find((x) => x.id === id)
+  if (!p || !map) return
+  map.setView([p.lat, p.lng], 16)
+  selectedPlaceId.value = id
+}
+
+defineExpose({ focusPlace })
 </script>
 
 <template>
