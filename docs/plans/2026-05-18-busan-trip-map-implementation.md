@@ -6,7 +6,7 @@
 
 **Architecture:** Vue 3 + Pinia + Leaflet, single-page, all state in two Pinia stores (`places`, `categories`) persisted to `localStorage` under key `busan-trip:v1`. The map is full-screen; UI controls float over it. Pure logic (URL parser, persistence serialization, distance math) is TDD'd with Vitest. UI components are wired manually and verified in the dev server.
 
-**Tech Stack:** Vue 3, Vite, TypeScript, Pinia, Leaflet, lucide-vue-next, uuid, Vitest (testing).
+**Tech Stack:** Vue 3, Vite, TypeScript, Pinia, Leaflet, @lucide/vue, uuid, Vitest (testing).
 
 **Design reference:** `docs/plans/2026-05-18-busan-trip-map-design.md`
 
@@ -73,13 +73,13 @@ git commit -m "chore: add Vitest test infrastructure"
 
 Run:
 ```
-npm install leaflet pinia lucide-vue-next uuid
+npm install leaflet pinia @lucide/vue uuid
 npm install -D @types/leaflet @types/uuid
 ```
 
 **Step 2: Verify versions**
 
-Read `package.json` and confirm `leaflet`, `pinia`, `lucide-vue-next`, `uuid` are in `dependencies`, and the two `@types/*` are in `devDependencies`.
+Read `package.json` and confirm `leaflet`, `pinia`, `@lucide/vue`, `uuid` are in `dependencies`, and the two `@types/*` are in `devDependencies`.
 
 **Step 3: Wire Pinia into `main.ts`**
 
@@ -119,7 +119,7 @@ git commit -m "feat: install Leaflet, Pinia, Lucide, uuid"
 export interface Category {
   id: string
   name: string
-  icon: string      // lucide-vue-next component name in kebab-case (e.g. 'utensils')
+  icon: string      // @lucide/vue component name in kebab-case (e.g. 'utensils')
   color: string     // hex like '#ef4444'
   isDefault: boolean
 }
