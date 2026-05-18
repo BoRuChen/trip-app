@@ -43,4 +43,15 @@ describe('parseMapsInput', () => {
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.name).toBe('광안리')
   })
+
+  it('handles malformed URL encoding without throwing', () => {
+    const r = parseMapsInput('https://www.google.com/maps/place/%E0/@35.1531,129.1187,17z')
+    expect(r.ok).toBe(true)
+    // Should not throw; name falls back to the raw segment
+  })
+
+  it('parses /maps/@lat,lng,zoom URL (no /place/ segment)', () => {
+    const r = parseMapsInput('https://www.google.com/maps/@35.1531,129.1187,17z')
+    expect(r).toEqual({ ok: true, lat: 35.1531, lng: 129.1187, name: undefined })
+  })
 })

@@ -20,11 +20,26 @@ function tryPlaceUrl(input: string): ParseResult | null {
   // https://www.google.com/maps/place/<name>/@lat,lng,zoom
   const m = input.match(/\/maps\/place\/([^/]+)\/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
   if (!m) return null
-  const name = decodeURIComponent(m[1].replace(/\+/g, ' '))
+  let name: string
+  try {
+    name = decodeURIComponent(m[1].replace(/\+/g, ' '))
+  } catch {
+    name = m[1].replace(/\+/g, ' ')
+  }
   const lat = parseFloat(m[2])
   const lng = parseFloat(m[3])
   if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
   return { ok: true, lat, lng, name }
+}
+
+function tryAtUrl(input: string): ParseResult | null {
+  // https://www.google.com/maps/@lat,lng,zoom (no /place/ segment)
+  const m = input.match(/\/maps\/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
+  if (!m) return null
+  const lat = parseFloat(m[1])
+  const lng = parseFloat(m[2])
+  if (!isValidLat(lat) || !isValidLng(lng)) return { ok: false, reason: '座標超出有效範圍' }
+  return { ok: true, lat, lng }
 }
 
 function tryQueryUrl(input: string): ParseResult | null {
@@ -46,6 +61,7 @@ export function parseMapsInput(input: string): ParseResult {
   }
   return (
     tryPlaceUrl(input) ??
+    tryAtUrl(input) ??
     tryQueryUrl(input) ??
     tryBareCoords(input) ?? {
       ok: false,
