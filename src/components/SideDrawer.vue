@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PlaceList from './PlaceList.vue'
+import ShoppingList from './ShoppingList.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useCategoriesStore } from '@/stores/categories'
+import { useShoppingStore } from '@/stores/shopping'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: []; select: [id: string] }>()
 
 const places = usePlacesStore()
 const categories = useCategoriesStore()
+const shopping = useShoppingStore()
 
-type Tab = 'places' | 'settings'
+type Tab = 'places' | 'shopping' | 'settings'
 const tab = ref<Tab>('places')
 
 function handleSelect(id: string) {
@@ -21,9 +24,10 @@ function handleSelect(id: string) {
 function exportJson() {
   const data = JSON.stringify(
     {
-      schemaVersion: 1,
+      schemaVersion: 2,
       categories: categories.categories,
       places: places.places,
+      shoppingItems: shopping.items,
     },
     null,
     2,
@@ -46,7 +50,10 @@ async function handleImportFile(e: Event) {
   try {
     const text = await file.text()
     const data = JSON.parse(text)
-    if (data.schemaVersion !== 1) {
+    const importedShopping = data.schemaVersion === 2 && Array.isArray(data.shoppingItems)
+      ? data.shoppingItems
+      : []
+    if (data.schemaVersion !== 1 && data.schemaVersion !== 2) {
       alert('版本不相容')
       return
     }
@@ -54,17 +61,20 @@ async function handleImportFile(e: Event) {
     if (!merge) {
       categories.categories = data.categories
       places.setAll(data.places)
+      shopping.setAll(importedShopping)
     } else {
       const existingPlaceIds = new Set(places.places.map((p) => p.id))
       for (const p of data.places) if (!existingPlaceIds.has(p.id)) places.places.push(p)
       const existingCatIds = new Set(categories.categories.map((c) => c.id))
       for (const c of data.categories) if (!existingCatIds.has(c.id)) categories.categories.push(c)
+      const existingShoppingIds = new Set(shopping.items.map((i) => i.id))
+      for (const s of importedShopping) if (!existingShoppingIds.has(s.id)) shopping.items.push(s)
     }
     alert('匯入完成')
   } catch (err) {
     alert('匯入失敗：' + (err as Error).message)
   } finally {
-    input.value = '' // allow re-importing the same file
+    input.value = ''
   }
 }
 
@@ -73,6 +83,8 @@ function clearAll() {
     if (confirm('再次確認：所有資料將消失')) {
       places.setAll([])
       categories.categories = categories.categories.filter((c) => c.isDefault)
+      // Note: shopping items intentionally NOT cleared here — use shopping tab to manage them
+      // (and proper image cleanup happens via shopping.remove, not bulk wipe).
     }
   }
 }
@@ -89,11 +101,13 @@ function clearAll() {
 
         <nav class="tabs">
           <button :class="{ active: tab === 'places' }" @click="tab = 'places'">景點</button>
+          <button :class="{ active: tab === 'shopping' }" @click="tab = 'shopping'">購買清單</button>
           <button :class="{ active: tab === 'settings' }" @click="tab = 'settings'">設定</button>
         </nav>
 
         <div class="content">
           <PlaceList v-if="tab === 'places'" @select="handleSelect" />
+          <ShoppingList v-else-if="tab === 'shopping'" />
           <div v-else class="settings">
             <button @click="exportJson">匯出 JSON 備份</button>
             <button @click="fileInput?.click()">匯入 JSON</button>
