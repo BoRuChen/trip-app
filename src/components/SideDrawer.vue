@@ -5,6 +5,29 @@ import ShoppingList from './ShoppingList.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useCategoriesStore } from '@/stores/categories'
 import { useShoppingStore } from '@/stores/shopping'
+import {
+  loadImage,
+  saveImageWithId,
+  clearAllImages,
+  deleteImages,
+} from '@/stores/imageStore'
+
+function bufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf)
+  const CHUNK = 0x8000
+  let bin = ''
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[])
+  }
+  return btoa(bin)
+}
+
+function base64ToBlob(b64: string, type: string): Blob {
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type })
+}
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: []; select: [id: string] }>()
@@ -21,13 +44,22 @@ function handleSelect(id: string) {
   emit('close')
 }
 
-function exportJson() {
+async function exportJson() {
+  const allIds = [...new Set(shopping.items.flatMap((i) => i.imageIds))]
+  const images: Record<string, { data: string; type: string }> = {}
+  for (const id of allIds) {
+    const blob = await loadImage(id)
+    if (!blob) continue
+    const buf = await blob.arrayBuffer()
+    images[id] = { data: bufferToBase64(buf), type: blob.type }
+  }
   const data = JSON.stringify(
     {
       schemaVersion: 2,
       categories: categories.categories,
       places: places.places,
       shoppingItems: shopping.items,
+      images,
     },
     null,
     2,
@@ -50,26 +82,44 @@ async function handleImportFile(e: Event) {
   try {
     const text = await file.text()
     const data = JSON.parse(text)
-    const importedShopping = data.schemaVersion === 2 && Array.isArray(data.shoppingItems)
-      ? data.shoppingItems
-      : []
+    const importedShopping: typeof shopping.items =
+      data.schemaVersion === 2 && Array.isArray(data.shoppingItems) ? data.shoppingItems : []
+    const importedImages: Record<string, { data: string; type: string }> =
+      data.schemaVersion === 2 && data.images && typeof data.images === 'object' ? data.images : {}
+
     if (data.schemaVersion !== 1 && data.schemaVersion !== 2) {
       alert('版本不相容')
       return
     }
     const merge = confirm('OK = 合併（保留現有）、取消 = 完全取代')
+
+    // Decide which image ids to restore to IndexedDB.
+    let imageIdsToRestore: string[]
     if (!merge) {
       categories.categories = data.categories
       places.setAll(data.places)
+      // Replace mode: wipe all existing images first, then restore everything from the bundle.
+      await clearAllImages()
       shopping.setAll(importedShopping)
+      imageIdsToRestore = Object.keys(importedImages)
     } else {
       const existingPlaceIds = new Set(places.places.map((p) => p.id))
       for (const p of data.places) if (!existingPlaceIds.has(p.id)) places.places.push(p)
       const existingCatIds = new Set(categories.categories.map((c) => c.id))
       for (const c of data.categories) if (!existingCatIds.has(c.id)) categories.categories.push(c)
+      // Merge mode: only add shopping items whose id is new, and only restore their images.
       const existingShoppingIds = new Set(shopping.items.map((i) => i.id))
-      for (const s of importedShopping) if (!existingShoppingIds.has(s.id)) shopping.items.push(s)
+      const newShoppingItems = importedShopping.filter((s) => !existingShoppingIds.has(s.id))
+      for (const s of newShoppingItems) shopping.items.push(s)
+      imageIdsToRestore = [...new Set(newShoppingItems.flatMap((s) => s.imageIds))]
     }
+
+    for (const id of imageIdsToRestore) {
+      const entry = importedImages[id]
+      if (!entry) continue
+      await saveImageWithId(id, base64ToBlob(entry.data, entry.type))
+    }
+
     alert('匯入完成')
   } catch (err) {
     alert('匯入失敗：' + (err as Error).message)
@@ -78,15 +128,23 @@ async function handleImportFile(e: Event) {
   }
 }
 
-function clearAll() {
-  if (confirm('真的要清除所有景點與自訂分類嗎？此操作無法復原。')) {
-    if (confirm('再次確認：所有資料將消失')) {
-      places.setAll([])
-      categories.categories = categories.categories.filter((c) => c.isDefault)
-      // Note: shopping items intentionally NOT cleared here — use shopping tab to manage them
-      // (and proper image cleanup happens via shopping.remove, not bulk wipe).
-    }
-  }
+async function clearShopping() {
+  if (!confirm('真的要清除所有購買項目嗎？此操作無法復原。')) return
+  if (!confirm('再次確認：購買清單與所有上傳的圖片將消失')) return
+  const allImageIds = [...new Set(shopping.items.flatMap((i) => i.imageIds))]
+  shopping.setAll([])
+  if (allImageIds.length) await deleteImages(allImageIds)
+  // Safety net: also wipe any orphans that slipped through earlier flows.
+  await clearAllImages()
+}
+
+async function clearAll() {
+  if (!confirm('真的要清除所有資料嗎？景點、自訂分類、購買清單與圖片都會消失。')) return
+  if (!confirm('再次確認：所有資料將消失')) return
+  places.setAll([])
+  categories.categories = categories.categories.filter((c) => c.isDefault)
+  shopping.setAll([])
+  await clearAllImages()
 }
 </script>
 
@@ -118,6 +176,7 @@ function clearAll() {
               style="display: none"
               @change="handleImportFile"
             />
+            <button class="danger" @click="clearShopping">清除購買清單</button>
             <button class="danger" @click="clearAll">清除所有資料</button>
           </div>
         </div>
