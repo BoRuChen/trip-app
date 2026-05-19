@@ -1,6 +1,14 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveImage, loadImage, deleteImage, deleteImages, _resetForTest } from '../imageStore'
+import {
+  saveImage,
+  saveImageWithId,
+  loadImage,
+  deleteImage,
+  deleteImages,
+  clearAllImages,
+  _resetForTest,
+} from '../imageStore'
 
 describe('imageStore', () => {
   beforeEach(async () => {
@@ -53,5 +61,34 @@ describe('imageStore', () => {
       saveImage(new Blob(['3'])),
     ])
     expect(new Set(ids).size).toBe(3)
+  })
+
+  it('saveImageWithId stores under the supplied id', async () => {
+    await saveImageWithId('fixed-id-123', new Blob(['payload'], { type: 'image/png' }))
+    const loaded = await loadImage('fixed-id-123')
+    expect(loaded).not.toBeNull()
+    expect(loaded!.type).toBe('image/png')
+    const buf = await loaded!.arrayBuffer()
+    expect(new TextDecoder().decode(buf)).toBe('payload')
+  })
+
+  it('saveImageWithId overwrites an existing entry with the same id', async () => {
+    await saveImageWithId('dup', new Blob(['old']))
+    await saveImageWithId('dup', new Blob(['new'], { type: 'image/jpeg' }))
+    const loaded = await loadImage('dup')
+    expect(loaded!.type).toBe('image/jpeg')
+    expect(new TextDecoder().decode(await loaded!.arrayBuffer())).toBe('new')
+  })
+
+  it('clearAllImages empties the store', async () => {
+    const id1 = await saveImage(new Blob(['a']))
+    const id2 = await saveImage(new Blob(['b']))
+    await clearAllImages()
+    expect(await loadImage(id1)).toBeNull()
+    expect(await loadImage(id2)).toBeNull()
+  })
+
+  it('clearAllImages on an already-empty store is a no-op', async () => {
+    await expect(clearAllImages()).resolves.toBeUndefined()
   })
 })

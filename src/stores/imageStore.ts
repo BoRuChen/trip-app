@@ -35,10 +35,14 @@ function wrap<T>(req: IDBRequest<T>): Promise<T> {
 
 export async function saveImage(blob: Blob): Promise<string> {
   const id = uuid()
+  await saveImageWithId(id, blob)
+  return id
+}
+
+export async function saveImageWithId(id: string, blob: Blob): Promise<void> {
   const buffer = await blob.arrayBuffer()
   const store = await tx('readwrite')
   await wrap(store.put({ id, buffer, type: blob.type }))
-  return id
 }
 
 export async function loadImage(id: string): Promise<Blob | null> {
@@ -65,6 +69,11 @@ export async function deleteImages(ids: string[]): Promise<void> {
     transaction.onerror = () => reject(transaction.error)
     transaction.onabort = () => reject(transaction.error)
   })
+}
+
+export async function clearAllImages(): Promise<void> {
+  const store = await tx('readwrite')
+  await wrap(store.clear())
 }
 
 export async function _resetForTest(): Promise<void> {
