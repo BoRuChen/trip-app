@@ -19,9 +19,10 @@ export function initStores() {
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       saveState({
-        schemaVersion: 1,
+        schemaVersion: 2,
         categories: categories.categories,
         places: places.places,
+        shoppingItems: [],
       })
     }, 300)
   }

@@ -18,8 +18,20 @@ export interface Place {
   createdAt: number
 }
 
+export interface ShoppingItem {
+  id: string
+  name: string
+  note?: string
+  quantity?: string
+  location?: string
+  imageIds: string[]
+  purchased: boolean
+  createdAt: number
+}
+
 export interface PersistedState {
-  schemaVersion: 1
+  schemaVersion: 2
   categories: Category[]
   places: Place[]
+  shoppingItems: ShoppingItem[]
 }
