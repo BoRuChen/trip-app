@@ -5,6 +5,7 @@ export const BUSAN_CENTER: [number, number] = [35.1796, 129.0756]
 export const DEFAULT_ZOOM = 12
 export const NEARBY_RADIUS_M = 1000
 
+
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-food',     name: '美食',     icon: 'utensils',      color: '#ef4444', isDefault: true },
   { id: 'cat-cafe',     name: '咖啡甜點', icon: 'coffee',        color: '#a16207', isDefault: true },
