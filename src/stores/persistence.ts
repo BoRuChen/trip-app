@@ -7,17 +7,24 @@ export function loadState(): PersistedState | null {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
-    if (!Array.isArray(parsed.categories) || !Array.isArray(parsed.places)) return null
+    if (!Array.isArray(parsed.categories)) return null
 
-    if (parsed.schemaVersion === 2) {
+    if (parsed.schemaVersion === 3) {
       if (!Array.isArray(parsed.shoppingItems)) return null
       return parsed as PersistedState
     }
+    if (parsed.schemaVersion === 2) {
+      if (!Array.isArray(parsed.shoppingItems)) return null
+      return {
+        schemaVersion: 3,
+        categories: parsed.categories,
+        shoppingItems: parsed.shoppingItems,
+      }
+    }
     if (parsed.schemaVersion === 1) {
       return {
-        schemaVersion: 2,
+        schemaVersion: 3,
         categories: parsed.categories,
-        places: parsed.places,
         shoppingItems: [],
       }
     }

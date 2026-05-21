@@ -16,6 +16,7 @@ export interface Place {
   sourceUrl?: string
   visited: boolean
   createdAt: number
+  updatedAt: number   // NEW: ms timestamp, set on add/update
 }
 
 export interface ShoppingItem {
@@ -30,8 +31,8 @@ export interface ShoppingItem {
 }
 
 export interface PersistedState {
-  schemaVersion: 2
+  schemaVersion: 3
   categories: Category[]
-  places: Place[]
   shoppingItems: ShoppingItem[]
+  // NOTE: places removed — now stored in Supabase
 }
