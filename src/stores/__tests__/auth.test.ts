@@ -90,4 +90,54 @@ describe('useAuthStore', () => {
     expect(store.status).toBe('anon')
     expect(store.user).toBeNull()
   })
+
+  it('onAuthStateChange callback updates session state', async () => {
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null })
+    const store = useAuthStore()
+    await store.init()
+    const cb = onAuthStateChangeMock.mock.calls[0][0] as
+      (event: string, s: { user: { id: string; email: string } } | null) => void
+    cb('SIGNED_IN', { user: { id: 'u2', email: 'x@y.z' } })
+    expect(store.status).toBe('authed')
+    expect(store.user?.id).toBe('u2')
+    cb('SIGNED_OUT', null)
+    expect(store.status).toBe('anon')
+    expect(store.user).toBeNull()
+  })
+
+  it('signUp() with error sets errorMessage', async () => {
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null })
+    signUpMock.mockResolvedValue({ data: { user: null, session: null }, error: { message: 'taken' } })
+    const store = useAuthStore()
+    await store.init()
+    await store.signUp('a@b.c', 'pw')
+    expect(store.errorMessage).toBe('taken')
+    expect(store.status).toBe('anon')
+  })
+
+  it("signUp() success with no session leaves status='anon' and clears errorMessage", async () => {
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null })
+    signUpMock.mockResolvedValue({ data: { user: { id: 'u3' }, session: null }, error: null })
+    const store = useAuthStore()
+    await store.init()
+    await store.signUp('a@b.c', 'pw')
+    expect(store.status).toBe('anon')
+    expect(store.errorMessage).toBeNull()
+  })
+
+  it('init() called twice does not leave a leaked listener', async () => {
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null })
+    const unsubA = vi.fn()
+    const unsubB = vi.fn()
+    onAuthStateChangeMock
+      .mockReturnValueOnce({ data: { subscription: { unsubscribe: unsubA } } })
+      .mockReturnValueOnce({ data: { subscription: { unsubscribe: unsubB } } })
+
+    const store = useAuthStore()
+    await store.init()
+    await store.init()
+
+    expect(unsubA).toHaveBeenCalledTimes(1)   // first subscription was cleaned up
+    expect(unsubB).toHaveBeenCalledTimes(0)   // second is still active
+  })
 })

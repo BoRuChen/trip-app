@@ -5,6 +5,9 @@ import type { Session, User } from '@supabase/supabase-js'
 
 export type AuthStatus = 'loading' | 'authed' | 'anon' | 'error'
 
+// Module-scoped subscription handle so repeated init() calls don't stack listeners.
+let authSubscription: { unsubscribe: () => void } | null = null
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
@@ -23,9 +26,16 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data } = await supabase.auth.getSession()
       applySession(data.session)
-      supabase.auth.onAuthStateChange((_event, s) => {
+      // Unsubscribe any previous listener before registering a new one,
+      // to avoid duplicate handlers if init() is called more than once.
+      if (authSubscription) {
+        authSubscription.unsubscribe()
+        authSubscription = null
+      }
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
         applySession(s)
       })
+      authSubscription = sub.subscription
     } catch (e) {
       status.value = 'error'
       errorMessage.value = (e as Error).message
