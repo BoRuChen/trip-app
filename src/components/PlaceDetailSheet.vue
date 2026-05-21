@@ -19,12 +19,12 @@ function openInGoogleMaps() {
     '_blank',
   )
 }
-function toggleVisited() {
-  if (place.value) places.update(place.value.id, { visited: !place.value.visited })
+async function toggleVisited() {
+  if (place.value) await places.updatePlace(place.value.id, { visited: !place.value.visited })
 }
-function remove() {
+async function remove() {
   if (place.value && confirm(`刪除「${place.value.name}」？`)) {
-    places.remove(place.value.id)
+    await places.deletePlace(place.value.id)
     emit('close')
   }
 }

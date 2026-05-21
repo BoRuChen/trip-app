@@ -3,12 +3,14 @@ import { ref, computed, watch } from 'vue'
 import { parseMapsInput } from '@/composables/useMapsUrlParser'
 import { usePlacesStore } from '@/stores/places'
 import { useCategoriesStore } from '@/stores/categories'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ open: boolean; editingId: string | null }>()
 const emit = defineEmits<{ close: [] }>()
 
 const places = usePlacesStore()
 const categories = useCategoriesStore()
+const auth = useAuthStore()
 
 const editing = computed(() =>
   props.editingId ? places.places.find((p) => p.id === props.editingId) : null,
@@ -74,7 +76,7 @@ const canSave = computed(
     categoryId.value !== '',
 )
 
-function save() {
+async function save() {
   if (!canSave.value || lat.value === null || lng.value === null) return
   const data = {
     name: name.value.trim(),
@@ -85,8 +87,8 @@ function save() {
     sourceUrl: urlInput.value.trim() || undefined,
     visited: visited.value,
   }
-  if (editing.value) places.update(editing.value.id, data)
-  else places.add(data)
+  if (editing.value) await places.updatePlace(editing.value.id, data)
+  else if (auth.user) await places.addPlace(auth.user.id, data)
   emit('close')
 }
 </script>

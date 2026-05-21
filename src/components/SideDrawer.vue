@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import PlaceList from './PlaceList.vue'
 import ShoppingList from './ShoppingList.vue'
-import { usePlacesStore } from '@/stores/places'
 import { useCategoriesStore } from '@/stores/categories'
 import { useShoppingStore } from '@/stores/shopping'
 import {
@@ -32,7 +31,6 @@ function base64ToBlob(b64: string, type: string): Blob {
 defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: []; select: [id: string] }>()
 
-const places = usePlacesStore()
 const categories = useCategoriesStore()
 const shopping = useShoppingStore()
 
@@ -55,9 +53,8 @@ async function exportJson() {
   }
   const data = JSON.stringify(
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       categories: categories.categories,
-      places: places.places,
       shoppingItems: shopping.items,
       images,
     },
@@ -82,29 +79,41 @@ async function handleImportFile(e: Event) {
   try {
     const text = await file.text()
     const data = JSON.parse(text)
-    const importedShopping: typeof shopping.items =
-      data.schemaVersion === 2 && Array.isArray(data.shoppingItems) ? data.shoppingItems : []
-    const importedImages: Record<string, { data: string; type: string }> =
-      data.schemaVersion === 2 && data.images && typeof data.images === 'object' ? data.images : {}
 
-    if (data.schemaVersion !== 1 && data.schemaVersion !== 2) {
+    if (data.schemaVersion !== 1 && data.schemaVersion !== 2 && data.schemaVersion !== 3) {
       alert('版本不相容')
       return
     }
+    if (
+      (data.schemaVersion === 2 || data.schemaVersion === 3) &&
+      !Array.isArray(data.shoppingItems)
+    ) {
+      alert('版本不相容')
+      return
+    }
+
+    const importedShopping: typeof shopping.items =
+      (data.schemaVersion === 2 || data.schemaVersion === 3) && Array.isArray(data.shoppingItems)
+        ? data.shoppingItems
+        : []
+    const importedImages: Record<string, { data: string; type: string }> =
+      (data.schemaVersion === 2 || data.schemaVersion === 3) &&
+      data.images &&
+      typeof data.images === 'object'
+        ? data.images
+        : {}
+
     const merge = confirm('OK = 合併（保留現有）、取消 = 完全取代')
 
     // Decide which image ids to restore to IndexedDB.
     let imageIdsToRestore: string[]
     if (!merge) {
       categories.categories = data.categories
-      places.setAll(data.places)
       // Replace mode: wipe all existing images first, then restore everything from the bundle.
       await clearAllImages()
       shopping.setAll(importedShopping)
       imageIdsToRestore = Object.keys(importedImages)
     } else {
-      const existingPlaceIds = new Set(places.places.map((p) => p.id))
-      for (const p of data.places) if (!existingPlaceIds.has(p.id)) places.places.push(p)
       const existingCatIds = new Set(categories.categories.map((c) => c.id))
       for (const c of data.categories) if (!existingCatIds.has(c.id)) categories.categories.push(c)
       // Merge mode: only add shopping items whose id is new, and only restore their images.
@@ -141,7 +150,6 @@ async function clearShopping() {
 async function clearAll() {
   if (!confirm('真的要清除所有資料嗎？景點、自訂分類、購買清單與圖片都會消失。')) return
   if (!confirm('再次確認：所有資料將消失')) return
-  places.setAll([])
   categories.categories = categories.categories.filter((c) => c.isDefault)
   shopping.setAll([])
   await clearAllImages()
