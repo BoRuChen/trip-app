@@ -2,8 +2,11 @@
 import { ref } from 'vue'
 import PlaceList from './PlaceList.vue'
 import ShoppingList from './ShoppingList.vue'
+import AuthGate from './AuthGate.vue'
 import { useCategoriesStore } from '@/stores/categories'
 import { useShoppingStore } from '@/stores/shopping'
+import { useAuthStore } from '@/stores/auth'
+import { usePlacesStore } from '@/stores/places'
 import {
   loadImage,
   saveImageWithId,
@@ -33,6 +36,8 @@ const emit = defineEmits<{ close: []; select: [id: string] }>()
 
 const categories = useCategoriesStore()
 const shopping = useShoppingStore()
+const auth = useAuthStore()
+const places = usePlacesStore()
 
 type Tab = 'places' | 'shopping' | 'settings'
 const tab = ref<Tab>('places')
@@ -165,6 +170,12 @@ async function clearAll() {
           <button @click="emit('close')" aria-label="關閉">✕</button>
         </header>
 
+        <div v-if="auth.status === 'authed'" class="account-bar">
+          <span class="email">{{ auth.user?.email }}</span>
+          <span class="conn" :data-state="places.connection" :title="places.connection"></span>
+          <button class="signout" @click="auth.signOut()">登出</button>
+        </div>
+
         <nav class="tabs">
           <button :class="{ active: tab === 'places' }" @click="tab = 'places'">景點</button>
           <button :class="{ active: tab === 'shopping' }" @click="tab = 'shopping'">購買清單</button>
@@ -172,7 +183,9 @@ async function clearAll() {
         </nav>
 
         <div class="content">
-          <PlaceList v-if="tab === 'places'" @select="handleSelect" />
+          <AuthGate v-if="tab === 'places'">
+            <PlaceList @select="handleSelect" />
+          </AuthGate>
           <ShoppingList v-else-if="tab === 'shopping'" />
           <div v-else class="settings">
             <button @click="exportJson">匯出 JSON 備份</button>
@@ -207,6 +220,22 @@ async function clearAll() {
 header { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #eee; }
 header h2 { flex: 1; margin: 0; font-size: 1.1rem; }
 header button { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+.account-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-bottom: 1px solid #eee;
+  font-size: 0.85rem; color: #666;
+}
+.account-bar .email { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-bar .conn {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ccc;
+}
+.account-bar .conn[data-state='connected'] { background: #10b981; }
+.account-bar .conn[data-state='reconnecting'] { background: #f59e0b; }
+.account-bar .conn[data-state='offline'] { background: #ef4444; }
+.account-bar .signout {
+  background: none; border: 1px solid #ddd; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+}
 .tabs { display: flex; border-bottom: 1px solid #eee; }
 .tabs button {
   flex: 1; padding: 12px; background: none; border: none;

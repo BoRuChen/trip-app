@@ -4,6 +4,7 @@ import MapView from './components/MapView.vue'
 import PlaceDetailSheet from './components/PlaceDetailSheet.vue'
 import AddPlaceModal from './components/AddPlaceModal.vue'
 import SideDrawer from './components/SideDrawer.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const selectedPlaceId = ref<string | null>(null)
 const modalOpen = ref(false)
@@ -11,8 +12,13 @@ const editingId = ref<string | null>(null)
 const drawerOpen = ref(false)
 
 const mapViewRef = ref<InstanceType<typeof MapView> | null>(null)
+const auth = useAuthStore()
 
 function openAdd() {
+  if (auth.status !== 'authed') {
+    drawerOpen.value = true
+    return
+  }
   editingId.value = null
   modalOpen.value = true
 }
