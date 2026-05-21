@@ -70,3 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return { user, session, status, errorMessage, init, signIn, signUp, signOut }
 })
+
+export function _resetForTest(): void {
+  authSubscription = null
+}

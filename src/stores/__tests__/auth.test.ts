@@ -20,11 +20,12 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-import { useAuthStore } from '../auth'
+import { useAuthStore, _resetForTest } from '../auth'
 
 describe('useAuthStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    _resetForTest()
     getSessionMock.mockReset()
     onAuthStateChangeMock.mockReset()
     signInWithPasswordMock.mockReset()
@@ -139,5 +140,6 @@ describe('useAuthStore', () => {
 
     expect(unsubA).toHaveBeenCalledTimes(1)   // first subscription was cleaned up
     expect(unsubB).toHaveBeenCalledTimes(0)   // second is still active
+    expect(onAuthStateChangeMock).toHaveBeenCalledTimes(2)
   })
 })
