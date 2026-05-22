@@ -17,27 +17,11 @@ const mapEl = ref<HTMLDivElement | null>(null)
 let map: L.Map | null = null
 const markers = new Map<string, L.Marker>()
 
-const nearbyActive = ref(false)
 let userMarker: L.CircleMarker | null = null
 let radiusCircle: L.Circle | null = null
 
-function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6371000
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLng = toRad(b.lng - a.lng)
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(s))
-}
-
-function isDimmed(p: { lat: number; lng: number; visited: boolean }): boolean {
-  if (p.visited) return true
-  if (nearbyActive.value && geo.position.value) {
-    return distanceM(geo.position.value, p) > NEARBY_RADIUS_M
-  }
-  return false
+function isDimmed(p: { visited: boolean }): boolean {
+  return p.visited
 }
 
 function syncMarkers() {
@@ -91,8 +75,6 @@ async function activateNearby() {
     fillOpacity: 0.08,
     weight: 1,
   }).addTo(map)
-  nearbyActive.value = true
-  syncMarkers()
 }
 
 onMounted(() => {
